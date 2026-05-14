@@ -1,22 +1,41 @@
-# IPL 2022 Match Analysis
+# IPL 2022 Analytics Dashboard
 
-Portfolio-grade sports analytics project built on the IPL 2022 season dataset. The project upgrades a basic exploratory notebook into a reproducible analysis workflow and a deployable Streamlit dashboard with automated insights, exportable visualizations, and stakeholder-friendly summary artifacts.
+A portfolio-ready sports analytics project that transforms a raw IPL 2022 match dataset into a reproducible Python analysis pipeline and a deployable Streamlit dashboard.
 
-## Why this project stands out
+This project is designed to showcase data cleaning, feature engineering, KPI reporting, visual storytelling, and lightweight product thinking in one polished repository.
 
-- Converts a raw CSV into a structured analytics pipeline using Python and pandas.
-- Engineers cricket-specific features such as toss conversion, chase success, venue scoring intensity, and bowling spell impact.
-- Produces reusable deliverables including charts, summary tables, and a markdown executive brief.
-- Includes an interactive Streamlit app for live exploration and deployment.
-- Demonstrates end-to-end project ownership: data cleaning, analysis, storytelling, and reproducibility.
+## Live application
 
-## Business-style questions answered
+Live dashboard: [IPL Analytics Project](https://ipl-analytics-project-zx8cnbgusgmujruunxov7n.streamlit.app/)
 
-- Which teams were most efficient across the 2022 season?
-- How much did winning the toss influence the final result?
-- Which venues produced the most runs and the strongest chasing advantage?
-- Which players delivered the highest repeated match impact?
-- What were the biggest wins of the season by runs and wickets?
+## Project overview
+
+The original dataset contains match-level IPL 2022 information such as teams, toss decisions, venues, scores, player awards, and bowling figures. This project turns that static data into an interactive analytics experience that helps answer practical performance questions around team efficiency, toss impact, venue behavior, and player influence.
+
+## What this project demonstrates
+
+- Built a reusable analytics pipeline with `pandas` instead of keeping the work locked inside a notebook.
+- Cleaned inconsistent source values such as malformed date strings and team-name variations.
+- Engineered cricket-specific metrics like toss-to-win conversion, chasing success rate, and venue scoring intensity.
+- Generated structured outputs including charts, summary tables, and an executive-style markdown report.
+- Created a deployable Streamlit dashboard for interactive exploration and public portfolio presentation.
+
+## Key features
+
+- Interactive dashboard with filters for teams, venues, and match stages
+- KPI cards for match count, toss conversion, chasing wins, and scoring trends
+- Team, player, and venue performance views
+- CSV upload support for exploring compatible datasets
+- Downloadable filtered summary tables
+- Reproducible Python script for offline analysis export
+
+## Business questions answered
+
+- Which teams were the most efficient across the IPL 2022 season?
+- How strongly did toss wins influence match outcomes?
+- Which venues were highest scoring, and where was chasing most successful?
+- Which players had the strongest repeated impact on results?
+- What were the biggest wins by runs and wickets?
 
 ## Project structure
 
@@ -24,6 +43,7 @@ Portfolio-grade sports analytics project built on the IPL 2022 season dataset. T
 ipl_project/
 ├── IPL.csv
 ├── IPL_Capstone_Project.ipynb
+├── app.py
 ├── outputs/
 │   ├── figures/
 │   ├── metrics.json
@@ -31,23 +51,24 @@ ipl_project/
 │   ├── summary.md
 │   ├── team_summary.csv
 │   └── venue_summary.csv
-├── app.py
 ├── run_analysis.py
 ├── src/
 │   └── ipl_analysis.py
-└── requirements.txt
+├── requirements.txt
+└── .streamlit/
+    └── config.toml
 ```
 
-## Tools used
+## Tech stack
 
 - Python
 - pandas
 - matplotlib
 - seaborn
-- Jupyter Notebook
 - Streamlit
+- Jupyter Notebook
 
-## How to run
+## Local setup
 
 ```bash
 python3 -m pip install -r requirements.txt
@@ -55,25 +76,27 @@ python3 run_analysis.py
 streamlit run app.py
 ```
 
-Generated artifacts will be saved in `outputs/`. The dashboard runs locally at the URL shown by Streamlit, usually `http://localhost:8501`.
+Generated analysis artifacts are saved in `outputs/`.
 
 ## Deployment
 
 This project is ready to deploy on Streamlit Community Cloud.
 
 1. Push the repository to GitHub.
-2. Create a new app in Streamlit Community Cloud.
-3. Select this repository and set the main file path to `app.py`.
-4. Deploy with `requirements.txt` as the dependency source.
+2. Open [Streamlit Community Cloud](https://share.streamlit.io/).
+3. Select the repository.
+4. Set the main file path to `app.py`.
+5. Deploy using `requirements.txt`.
 
-## Resume-ready talking points
+## Resume-ready highlights
 
 - Built a reproducible sports analytics pipeline to evaluate IPL 2022 team, player, and venue performance.
-- Automated KPI generation and chart exports from a raw match-level dataset using pandas, matplotlib, and seaborn.
-- Translated exploratory analysis into portfolio-quality deliverables with executive summaries, structured outputs, and a deployable Streamlit dashboard.
+- Automated data cleaning, KPI extraction, chart generation, and stakeholder-friendly summaries from a raw CSV dataset.
+- Converted exploratory notebook work into a deployable Streamlit dashboard for interactive analysis and portfolio presentation.
 
-## Next possible upgrades
+## Future improvements
 
-- Add predictive modeling for match outcomes.
-- Publish the analysis as an interactive Streamlit dashboard.
-- Expand the dataset to multiple seasons for trend and era comparisons.
+- Add predictive modeling for match outcomes
+- Extend the project to multiple IPL seasons for trend analysis
+- Add advanced player efficiency metrics and matchup comparisons
+- Add dashboard screenshots and richer project visuals to the repository
