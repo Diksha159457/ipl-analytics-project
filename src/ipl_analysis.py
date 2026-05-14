@@ -23,6 +23,30 @@ TEAM_NAME_FIXES = {
 }
 
 
+def prepare_ipl_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    cleaned = df.copy()
+    team_columns = ["team1", "team2", "toss_winner", "match_winner"]
+    for column in team_columns:
+        cleaned[column] = cleaned[column].replace(TEAM_NAME_FIXES)
+
+    normalized_dates = cleaned["date"].astype(str).str.replace(" ", "", regex=False)
+    cleaned["date"] = pd.to_datetime(normalized_dates, format="%B%d,%Y")
+    cleaned["best_bowling_wickets"] = (
+        cleaned["best_bowling_figure"].str.split("--").str[0].astype(int)
+    )
+    cleaned["best_bowling_runs"] = (
+        cleaned["best_bowling_figure"].str.split("--").str[1].astype(int)
+    )
+    cleaned["toss_winner_also_match_winner"] = (
+        cleaned["toss_winner"] == cleaned["match_winner"]
+    )
+    cleaned["is_chasing_win"] = cleaned["won_by"].eq("Wickets")
+    cleaned["total_match_runs"] = (
+        cleaned["first_ings_score"] + cleaned["second_ings_score"]
+    )
+    return cleaned
+
+
 @dataclass
 class AnalysisArtifacts:
     metrics: dict
@@ -38,24 +62,7 @@ class IPLAnalysis:
 
     def _load_data(self) -> pd.DataFrame:
         df = pd.read_csv(self.csv_path)
-        team_columns = ["team1", "team2", "toss_winner", "match_winner"]
-        for column in team_columns:
-            df[column] = df[column].replace(TEAM_NAME_FIXES)
-
-        normalized_dates = df["date"].str.replace(" ", "", regex=False)
-        df["date"] = pd.to_datetime(normalized_dates, format="%B%d,%Y")
-        df["best_bowling_wickets"] = (
-            df["best_bowling_figure"].str.split("--").str[0].astype(int)
-        )
-        df["best_bowling_runs"] = (
-            df["best_bowling_figure"].str.split("--").str[1].astype(int)
-        )
-        df["toss_winner_also_match_winner"] = (
-            df["toss_winner"] == df["match_winner"]
-        )
-        df["is_chasing_win"] = df["won_by"].eq("Wickets")
-        df["total_match_runs"] = df["first_ings_score"] + df["second_ings_score"]
-        return df
+        return prepare_ipl_dataframe(df)
 
     def build_team_summary(self) -> pd.DataFrame:
         appearances = pd.concat([self.df["team1"], self.df["team2"]]).value_counts()
