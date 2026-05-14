@@ -1,0 +1,36 @@
+{
+  "dataset": {
+    "matches": 74,
+    "features": 25,
+    "season": "IPL 2022"
+  },
+  "headline_metrics": {
+    "toss_to_match_conversion_pct": 48.6,
+    "chasing_win_pct": 50.0,
+    "highest_run_win": {
+      "team": "Chennai",
+      "margin": 91
+    },
+    "highest_wicket_win": {
+      "team": "Delhi",
+      "margin": 9
+    }
+  },
+  "leaders": {
+    "top_team": {
+      "team": "Gujarat",
+      "wins": 12,
+      "matches": 16,
+      "win_pct": 75.0
+    },
+    "top_player": {
+      "player": "Kuldeep Yadav",
+      "player_of_match_awards": 4,
+      "cumulative_top_score_runs": 0
+    },
+    "highest_scoring_venue": {
+      "venue": "Eden Gardens, Kolkata",
+      "avg_total_runs": 389.5
+    }
+  }
+}
