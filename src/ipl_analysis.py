@@ -13,9 +13,22 @@ MPL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("XDG_CACHE_HOME", str(XDG_CACHE_DIR))
 os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE_DIR))
 
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
+import matplotlib  # noqa: E402
+
+matplotlib.use("Agg")  # headless: works in CI, servers and Streamlit Cloud
+import matplotlib.pyplot as plt  # noqa: E402
+import pandas as pd  # noqa: E402
+import seaborn as sns  # noqa: E402
+
+from src.insights import (  # noqa: E402
+    batting_first,
+    edge_sentence,
+    fit_par_score,
+    rate_test,
+    validate_matches,
+)
+
+MIN_VENUE_MATCHES = 5  # don't crown a "highest scoring venue" on 2 playoff games
 
 
 TEAM_NAME_FIXES = {
@@ -44,7 +57,28 @@ def prepare_ipl_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     cleaned["total_match_runs"] = (
         cleaned["first_ings_score"] + cleaned["second_ings_score"]
     )
+    cleaned["batting_first"] = batting_first(cleaned)
+    validate_matches(cleaned)
     return cleaned
+
+
+@dataclass(frozen=True)
+class _RateView:
+    """Read-only view of a serialised RateTest, so the summary can be rebuilt from metrics.json."""
+
+    successes: int
+    trials: int
+    rate_pct: float
+    ci_low_pct: float
+    ci_high_pct: float
+    p_value: float
+    significant: bool
+
+    def describe(self) -> str:
+        return (
+            f"{self.rate_pct}% (95% CI {self.ci_low_pct}–{self.ci_high_pct}%, "
+            f"n={self.trials}, p={self.p_value:.2f})"
+        )
 
 
 @dataclass
@@ -149,10 +183,12 @@ class IPLAnalysis:
         player_summary = self.build_player_summary()
         venue_summary = self.build_venue_summary()
 
-        toss_win_pct = round(
-            100 * self.df["toss_winner_also_match_winner"].mean(), 1
-        )
-        chasing_win_pct = round(100 * self.df["is_chasing_win"].mean(), 1)
+        toss_test = rate_test(self.df["toss_winner_also_match_winner"])
+        chase_test = rate_test(self.df["is_chasing_win"])
+        fielded = self.df[self.df["toss_decision"] == "Field"]
+        field_choice_test = rate_test(fielded["toss_winner_also_match_winner"])
+        field_share = round(100 * len(fielded) / len(self.df), 1)
+        par = fit_par_score(self.df)
 
         highest_run_win = self.df[self.df["won_by"] == "Runs"].nlargest(1, "margin")[
             ["match_winner", "margin"]
@@ -165,7 +201,10 @@ class IPLAnalysis:
         top_player = player_summary.sort_values(
             ["player_of_match_awards", "cumulative_top_score_runs"], ascending=False
         ).iloc[0]
-        top_venue = venue_summary.sort_values("avg_total_runs", ascending=False).iloc[0]
+        eligible = venue_summary[venue_summary["matches"] >= MIN_VENUE_MATCHES]
+        top_venue = (eligible if len(eligible) else venue_summary).sort_values(
+            "avg_total_runs", ascending=False
+        ).iloc[0]
 
         return {
             "dataset": {
@@ -174,8 +213,9 @@ class IPLAnalysis:
                 "season": "IPL 2022",
             },
             "headline_metrics": {
-                "toss_to_match_conversion_pct": toss_win_pct,
-                "chasing_win_pct": chasing_win_pct,
+                "toss_to_match_conversion_pct": toss_test.rate_pct,
+                "chasing_win_pct": chase_test.rate_pct,
+                "chose_to_field_pct": field_share,
                 "highest_run_win": {
                     "team": highest_run_win["match_winner"],
                     "margin": int(highest_run_win["margin"]),
@@ -202,8 +242,16 @@ class IPLAnalysis:
                 "highest_scoring_venue": {
                     "venue": top_venue["venue"],
                     "avg_total_runs": float(top_venue["avg_total_runs"]),
+                    "matches": int(top_venue["matches"]),
+                    "min_matches_required": MIN_VENUE_MATCHES,
                 },
             },
+            "statistical_tests": {
+                "toss_winner_wins_match": toss_test.to_dict(),
+                "chasing_side_wins": chase_test.to_dict(),
+                "toss_winner_who_fielded_wins": field_choice_test.to_dict(),
+            },
+            "par_score_model": par.to_dict(),
         }
 
     def create_visuals(self) -> None:
@@ -273,25 +321,43 @@ class IPLAnalysis:
         top_player = metrics["leaders"]["top_player"]
         headline = metrics["headline_metrics"]
         top_venue = metrics["leaders"]["highest_scoring_venue"]
+        tests = {k: _RateView(**v) for k, v in metrics["statistical_tests"].items()}
+        par = metrics["par_score_model"]
+
+        toss_line = edge_sentence(tests["toss_winner_wins_match"], "Teams that won the toss")
+        chase_line = edge_sentence(
+            tests["chasing_side_wins"],
+            "Chasing sides",
+            decision_note=(
+                f" Captains still chose to field {headline['chose_to_field_pct']}% of the time, "
+                "a preference the results don't justify."
+                if not tests["chasing_side_wins"].significant
+                else ""
+            ),
+        )
+        model_edge = par["baseline_brier"] - par["loo_brier"]
 
         return f"""# IPL 2022 Analysis Summary
 
 ## Executive Takeaways
 
-- {top_team["team"]} finished as the most efficient side in this dataset with {top_team["wins"]} wins in {top_team["matches"]} matches ({top_team["win_pct"]}% win rate).
-- Teams that won the toss also won the match {headline["toss_to_match_conversion_pct"]}% of the time, showing a meaningful but not decisive toss edge.
-- Chasing teams won {headline["chasing_win_pct"]}% of matches, which supports the field-first bias visible across the season.
-- {top_player["player"]} stood out as the strongest all-around impact player in this dataset with {top_player["player_of_match_awards"]} player-of-the-match awards.
-- {top_venue["venue"]} was the highest-scoring venue with an average total of {top_venue["avg_total_runs"]} runs per match.
+- {top_team["team"]} was the most successful side, with {top_team["wins"]} wins in {top_team["matches"]} matches ({top_team["win_pct"]}% win rate).
+- {toss_line}
+- {chase_line}
+- **Par score ≈ {par["par_score"]:.0f}.** A logistic model on first-innings score alone puts the batting-first side's win probability at 50% around {par["par_score"]:.0f} runs. Every ~{par["runs_per_10pct"]:.0f} extra runs lifts it by 10 points. Leave-one-out accuracy is {par["loo_accuracy"]:.0%} (Brier {par["loo_brier"]} vs {par["baseline_brier"]} for a no-skill baseline, {model_edge:.3f} better).
+- {top_player["player"]} had the most repeated impact, with {top_player["player_of_match_awards"]} player-of-the-match awards.
+- {top_venue["venue"]} was the highest-scoring venue among grounds with at least {top_venue["min_matches_required"]} matches: {top_venue["avg_total_runs"]} runs per match on average over {top_venue["matches"]} games.
 
 ## Notable Match Extremes
 
 - Biggest win by runs: {headline["highest_run_win"]["team"]} by {headline["highest_run_win"]["margin"]} runs.
 - Biggest win by wickets: {headline["highest_wicket_win"]["team"]} by {headline["highest_wicket_win"]["margin"]} wickets.
 
-## Portfolio Angle
+## Method notes
 
-This project turns a raw sports dataset into a reproducible analytics workflow by combining feature engineering, KPI extraction, automated reporting, and export-ready visualizations. It is designed to demonstrate data storytelling, Python-based analysis, and stakeholder-friendly communication.
+- Rates use Wilson 95% confidence intervals and an exact two-sided binomial test against 50% (α = 0.05).
+- One season is {metrics["dataset"]["matches"]} matches, so effects smaller than roughly ±11 points can't be detected. "No significant edge" means "no evidence of an edge", not "proof there is none".
+- Venues with fewer than {top_venue["min_matches_required"]} matches are excluded from venue leaderboards to avoid small-sample extremes.
 """
 
     def export(self) -> AnalysisArtifacts:

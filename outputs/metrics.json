@@ -1,12 +1,13 @@
 {
   "dataset": {
     "matches": 74,
-    "features": 25,
+    "features": 26,
     "season": "IPL 2022"
   },
   "headline_metrics": {
     "toss_to_match_conversion_pct": 48.6,
     "chasing_win_pct": 50.0,
+    "chose_to_field_pct": 79.7,
     "highest_run_win": {
       "team": "Chennai",
       "margin": 91
@@ -29,8 +30,47 @@
       "cumulative_top_score_runs": 0
     },
     "highest_scoring_venue": {
-      "venue": "Eden Gardens, Kolkata",
-      "avg_total_runs": 389.5
+      "venue": "Brabourne Stadium, Mumbai",
+      "avg_total_runs": 341.4,
+      "matches": 16,
+      "min_matches_required": 5
     }
+  },
+  "statistical_tests": {
+    "toss_winner_wins_match": {
+      "successes": 36,
+      "trials": 74,
+      "rate_pct": 48.6,
+      "ci_low_pct": 37.6,
+      "ci_high_pct": 59.8,
+      "p_value": 0.9076,
+      "significant": false
+    },
+    "chasing_side_wins": {
+      "successes": 37,
+      "trials": 74,
+      "rate_pct": 50.0,
+      "ci_low_pct": 38.9,
+      "ci_high_pct": 61.1,
+      "p_value": 1.0,
+      "significant": false
+    },
+    "toss_winner_who_fielded_wins": {
+      "successes": 29,
+      "trials": 59,
+      "rate_pct": 49.2,
+      "ci_low_pct": 36.8,
+      "ci_high_pct": 61.6,
+      "p_value": 1.0,
+      "significant": false
+    }
+  },
+  "par_score_model": {
+    "par_score": 172.0,
+    "runs_per_10pct": 7.4,
+    "loo_accuracy": 0.757,
+    "loo_brier": 0.184,
+    "baseline_brier": 0.25,
+    "n": 74
   }
 }
