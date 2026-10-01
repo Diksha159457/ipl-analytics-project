@@ -8,8 +8,8 @@ import pandas as pd
 import seaborn as sns
 import streamlit as st
 
+from src.insights import DataValidationError
 from src.ipl_analysis import IPLAnalysis, prepare_ipl_dataframe
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
@@ -310,8 +310,12 @@ def render_sidebar(default_df: pd.DataFrame) -> tuple[pd.DataFrame, str]:
     df = default_df
 
     if uploaded_file is not None:
-        df = load_uploaded_dataframe(uploaded_file.getvalue())
-        data_source = "Uploaded CSV"
+        try:
+            df = load_uploaded_dataframe(uploaded_file.getvalue())
+            data_source = "Uploaded CSV"
+        except (DataValidationError, KeyError, ValueError, UnicodeDecodeError) as error:
+            # Previously a malformed upload crashed the whole dashboard with a traceback.
+            st.sidebar.error(f"Couldn't use that CSV ({error}). Showing the built-in dataset.")
 
     teams = sorted(pd.unique(pd.concat([df["team1"], df["team2"]])))
     venues = sorted(df["venue"].unique())
